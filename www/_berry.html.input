@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<script type="text/javascript" src="input.js"></script>
+	<title>Berry Stream</title>
+</head>
+
+<body oncontextmenu="return false;">
+<script type="text/javascript">
+<!--
+	function sendMsg(url) {
+		var request = new XMLHttpRequest();
+		request.open("GET", url, true);
+		request.send("");
+	}
+
+	var canvas = document.getElementById("desktop");
+
+	var prev = null;
+	var prevButton;
+	var mouse = new Input.Mouse(canvas);
+	var keybord = new Input.Keybord();
+	var key_events =[
+		"1","2","3","4","5","6","7","8","9","0","-","^","\\",
+		"q","w","e","r","t","y","u","i","o","p","@","[",
+		"a","s","d","f","g","h","j","k","l",";",":","]",
+		"z","x","c","v","b","n","m",",",".","/",//"\\",
+		"up","down","left","right","space"]
+	// キーボードイベントの登録
+	key_events.forEach(function(key) { keybord.add(key); });
+
+	setInterval(function() {
+		keybord.update();	// キーボード情報の更新
+		mouse.update();		// マウス情報の更新
+		var pos = mouse.get_position();
+		if (pos) {
+			pos.x = parseInt(pos.x * 800/520);
+			pos.y = parseInt(pos.y * 600/390);
+		}
+
+		key_events.forEach(function(key) {
+			if (keybord.is_key_triggerd(key)) {
+				var keycode = key.charCodeAt(0);
+				sendMsg('/?action=command&dest=0&plugin=0&group=1&id=5&value=' + keycode);
+			}
+		});
+
+		if (mouse.get_button_states(0)) {
+			// 左ボタンが押されている
+			if (!prev) {
+				prev = {x: pos.x, y: pos.y};
+				sendMsg('/?action=command&dest=0&plugin=0&group=0&id=0&value='+ (pos.x*65536 + pos.y));
+			}
+			prev = {x: pos.x, y: pos.y};
+			prevButton = 0;
+		} else if (mouse.get_button_states(1)) {
+			// 中ボタンが押されている
+			if (!prev) {
+				prev = {x: pos.x, y: pos.y};
+				sendMsg('/?action=command&dest=0&plugin=0&group=0&id=1&value='+ (pos.x*65536 + pos.y));
+			}
+			prev = {x: pos.x, y: pos.y};
+			prevButton = 1;
+		} else if (mouse.get_button_states(2)) {
+			// 右ボタンが押されている
+			if (!prev) {
+				prev = {x: pos.x, y: pos.y};
+				sendMsg('/?action=command&dest=0&plugin=0&group=0&id=2&value='+ (pos.x*65536 + pos.y));
+			}
+			prev = {x: pos.x, y: pos.y};
+			prevButton = 2;
+		} else {
+			// 押されてない
+			if (prev) {
+				sendMsg('/?action=command&dest=0&plugin=0&group=1&id='+ prevButton +'&value='+ (prev.x*65536 + prev.y));
+			}
+			prev = null;
+		}
+	}, 1000/60);
+
+function resolution(sx, sy)
+{
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=6&value='+ (sx*65536 + sy);
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+function run()
+{
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=7&value=0';
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+function stop()
+{
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=8&value=0';
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+function quality(q)
+{
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=9&value='+ q;
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+</script>
+
+	<center>
+		<div><img id="desktop" width=520 height=390 src="/?action=stream" ondragstart="return false;" /></div>
+	</center>
+
+	<a href="javascript:resolution(800, 600);">800x600</a>/<a href="javascript:resolution(1920, 1200);">1920x1200</a><br>
+	<a href="javascript:run();">Start RDP</a>/<a href="javascript:stop();">Stop RDP</a><br>
+	<a href="javascript:quality(1);">1</a>/<a href="javascript:quality(2);">2</a>/<a href="javascript:quality(3);">3</a>/<a href="javascript:quality(4);">4</a>/<a href="javascript:quality(5);">5</a>/<a href="javascript:quality(6);">6</a>/<a href="javascript:quality(7);">7</a>/<a href="javascript:quality(8);">8</a><br>
+</body>
+</html>

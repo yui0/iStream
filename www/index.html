@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>iStream</title>
+</head>
+
+<body oncontextmenu="return false;">
+<style>
+/*div.resizeimage {
+	max-width: 1600px;
+	min-width: 240px;
+}
+div.resizeimage img { width: 100%; height: 100%; }*/
+</style>
+	<!--<center>-->
+		<div class="resizeimage"><img id="istream" width=520 height=390 src="/?action=stream" ondragstart="return false;" /></div>
+	<!--</center>-->
+
+	<a href="javascript:resize(640, 480);">640x480</a>/<a href="javascript:resize(800, 600);">800x600</a><br>
+
+	<a href="javascript:resolution(800, 600);">800x600</a>/<a href="javascript:resolution(1920, 1200);">1920x1200</a><br>
+	<a href="javascript:run();">Start RDP</a>/<a href="javascript:stop();">Stop RDP</a><br>
+	<a href="javascript:quality(1);">1</a>/<a href="javascript:quality(2);">2</a>/<a href="javascript:quality(3);">3</a>/<a href="javascript:quality(4);">4</a>/<a href="javascript:quality(5);">5</a>/<a href="javascript:quality(6);">6</a>/<a href="javascript:quality(7);">7</a>/<a href="javascript:quality(8);">8</a><br>
+
+<style>
+#touchkbd
+{
+	position:absolute;
+	z-index:0;
+	/*background-color: Black;
+	left : -2000px;
+	top : 0px;
+	width: 10px;*/
+	text-transform:lowercase;
+}
+</style>
+<input type="text" id="touchkbd" title="touchKeyboard" onkeyup="keyup(e)" autocapitalize="off" autocorrect="off" autocomplete="off"/>
+
+<script type="text/javascript">
+<!--
+function $(id) {
+	if (document.getElementById) { // getElementByIdが使えるか？
+		if (id !== undefined) { // IDが引数にあるか?
+			if (document.getElementById(id)) { // そのIDが存在するか?
+				var obj = document.getElementById(id);
+				obj.htm = obj.innerHTML;
+				// プロパティ名が有効なテキスト値を取る
+				obj.txt = ( obj.value || obj.innerText || obj.textContent );
+				return obj;
+			}
+			return null;
+		}
+		return true;
+	}
+	return false;
+}
+/*var addEvent=(function() {
+	if (window.addEventListener) {
+		// 某ブラウザ以外
+		return function(type, func, flg) {
+			this.addEventListener(type, func, flg);
+		};
+	} else {
+		// 某ブラウザ
+		return function(type, func, flg) {
+			var alfunc = this["on"+type];
+			this["on"+type] = function() {
+				if (typeof alfunc === "function") {
+					alfunc();
+				}
+				func();
+			};
+		};
+	}
+})();*/
+var addEvent = (function() {
+	if (window.addEventListener) {
+		return function(el, type, fn) {
+			el.addEventListener(type, fn, false);
+		};
+	} else if (window.attachEvent) {
+		return function(el, type, fn) {
+			var f = function() {
+			fn.call(el, window.event);
+			};
+			el.attachEvent('on' + type, f);
+		};
+	} else {
+		return function(el, type, fn) {
+			element['on' + type] = fn;
+		};
+	}
+})();
+
+// イベントの追加
+var isTouch = ('ontouchstart' in window);
+//var isTouch = 0;
+//var mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
+
+var canvas = document.getElementById("istream");
+if (!canvas) { alert("err"); canvas=document; }
+
+/*addEvent.apply(canvas, [isTouch?"touchstart":"mousedown", function(e){ mouseButton(e, 3); }, false]);
+addEvent.apply(canvas, [isTouch?"touchend":"mouseup", function(e){ mouseButton(e, 2); }, false]);
+addEvent.apply(canvas, [isTouch?"touchmove":"mousemove", function(e){ mouseMove(e); }, false]);
+addEvent.apply(canvas, ["mouseout", function(){ downTime=0; touched=false; }, false]);*/
+
+//addEvent(canvas, isTouch?"touchstart":"mousedown", function(e){ mouseButton(e, 3); });
+//addEvent(canvas, isTouch?"touchend":"mouseup", function(e){ mouseButton(e, 2); });
+
+addEvent(canvas, isTouch?"touchstart":"mousedown", function(){ touched=1; });
+addEvent(canvas, isTouch?"touchend":"mouseup", function(e){ mouseButton(e, 3); });
+addEvent(canvas, isTouch?"touchmove":"mousemove", function(e){ mouseMove(e); });
+if (isTouch) {
+	addEvent($("touchkbd"), "keyup", function(e){ keyup(e); });
+} else {
+	addEvent(canvas, "mouseout", function(){ downTime=0; touched=0; });
+	document.onkeydown = keydown;
+}
+
+function sendMsg(url) {
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+
+/*key_code_to_function_key = {
+	8: "backspace",9: "tab",13: "return",19: "pause",27: "escape",
+	32: "space",33: "pageup",34: "pagedown",35: "end",36: "home",
+	37: "left",38: "up",39: "right",40: "down",44: "printscreen",
+	45: "insert",46: "delete",112: "f1",113: "f2",114: "f3",
+	115: "f4",116: "f5",117: "f6",118: "f7",119: "f8",
+	120: "f9",121: "f10",122: "f11",123: "f12",144: "numlock",
+	145: "scrolllock"
+},
+key_code_to_printable_char = {
+	48: "0",49: "1",50: "2",51: "3",52: "4",53: "5",
+	54: "6",55: "7",56: "8",57: "9",59: ";",61: "=",
+	65: "a",66: "b",67: "c",68: "d",69: "e",70: "f",
+	71: "g",72: "h",73: "i",74: "j",75: "k",76: "l",
+	77: "m",78: "n",79: "o",80: "p",81: "q",82: "r",
+	83: "s",84: "t",85: "u",86: "v",87: "w",88: "x",
+	89: "y",90: "z",107: "+",109: "-",110: ".",188: ",",
+	190: ".",191: "/",192: "`",219: "[",220: "\\",221: "]",
+	222: "^"
+},
+key_check = function(key) {
+	var k;
+	for (k in key_code_to_function_key) {
+		if (key_code_to_function_key[k] === key) {
+			return k;
+		}
+	}
+	for (k in key_code_to_printable_char) {
+		if (key_code_to_printable_char[k] === key) {
+			return k;
+		}
+	}
+	return 0;
+},*/
+// http://www.openspc2.org/reibun/JavaScript_technique/sample/08_event/005/
+// /usr/include/X11/keysymdef.h
+key_code_to_X11 = {
+	8: 0xff08/*BS*/, 9: 0xff09/*TAB*/, 13: 0xff0d/*RET*/, 16: 0xffe1/*LSHIFT*/,
+	17: 0xffe3/*LCTRL*/, 18: 0xffe9/*LALT*/,
+	25: 0xff21/*半全*/, 27: 0xff1b/*ESC*/, 37: 0xff51/*←*/, 38: 0xff52/*↑*/,
+	39: 0xff53/*→*/, 40: 0xff54/*↓*/,
+	48: 0x30/*"0"*/, 49: 0x31/*"1"*/, 50: 0x32/*"2"*/, 51: 0x33/*"3"*/, 52: 0x34/*"4"*/, 53: 0x35/*"5"*/,
+	54: 0x36/*"6"*/, 55: 0x37/*"7"*/, 56: 0x38/*"8"*/, 57: 0x39/*"9"*/, 59: ";",61: "=",
+	65: 0x61/*"a"*/, 66: 0x62/*"b"*/, 67: 0x63/*"c"*/, 68: 0x64/*"d"*/, 69: 0x65/*"e"*/, 70: 0x66/*"f"*/,
+	71: 0x67/*"g"*/, 72: 0x68/*"h"*/, 73: 0x69/*"i"*/, 74: 0x6a/*"j"*/, 75: 0x6b/*"k"*/, 76: 0x6c/*"l"*/,
+	77: 0x6d/*"m"*/, 78: 0x6e/*"n"*/, 79: 0x6f/*"o"*/, 80: 0x70/*"p"*/, 81: 0x71/*"q"*/, 82: 0x72/*"r"*/,
+	83: 0x73/*"s"*/, 84: 0x74/*"t"*/, 85: 0x75/*"u"*/, 86: 0x76/*"v"*/, 87: 0x77/*"w"*/, 88: 0x78/*"x"*/,
+	89: 0x79/*"y"*/, 90: 0x7a/*"z"*/,
+	107: "+",109: "-",110: ".",188: ",",
+	190: ".", 191: "/",192: "`",219: "[",220: "\\",221: "]",
+	222: "^"
+};
+function key2X11(key)
+{
+	var k;
+	for (k in key_code_to_X11) {
+		if (k == key) {
+			return key_code_to_X11[k];
+		}
+	}
+	return 0;
+}
+
+function keydown(e) {
+	var shift, ctrl;
+
+	if (e != null) {
+		// Mozilla(Firefox, NN) and Opera
+		keycode = e.which;
+		ctrl = typeof e.modifiers == 'undefined' ? e.ctrlKey : e.modifiers & Event.CONTROL_MASK;
+		shift = typeof e.modifiers == 'undefined' ? e.shiftKey : e.modifiers & Event.SHIFT_MASK;
+		// イベントの上位伝播を防止
+		e.preventDefault();
+		e.stopPropagation();
+	} else {
+		// Internet Explorer
+		keycode = event.keyCode;
+		ctrl = event.ctrlKey;
+		shift = event.shiftKey;
+		// イベントの上位伝播を防止
+		event.returnValue = false;
+		event.cancelBubble = true;
+	}
+
+	if (keycode) {
+		/*var chr = String.fromCharCode(keycode);
+		sendMsg('/?action=command&dest=0&plugin=0&group=1&id=5&value=' + chr.charCodeAt(0));*/
+		sendMsg('/?action=command&dest=0&plugin=0&group=1&id=5&value=' + key2X11(keycode));
+	}
+}
+function keyup(e) {
+	var w = $("touchkbd");
+	var y = w.value;
+	var t = y.length;
+
+	w.value = "";
+	if (t < 1) {
+		sendMsg('/?action=command&dest=0&plugin=0&group=1&id=5&value=' + key2X11(e.which/*keycode*/));
+	} else {
+		//alert(y + " " +y.charCodeAt(t-1));
+		sendMsg('/?action=command&dest=0&plugin=0&group=1&id=5&value=' + y.charCodeAt(t-1));
+
+//		for (var u=0; u<t; ++u) {
+//			v = y.charCodeAt(u);
+//			sendMsg('/?action=command&dest=0&plugin=0&group=1&id=5&value=' + /*key2X11(*/v/*)*/);
+//		}
+	}
+	//w.value = "x";
+	//w.value = "";
+}
+
+var rx = 800/520, ry = 600/390;
+var downTime, touched;
+var mouse = { x: null, y:null };// マウス位置を取得
+/**
+* マウス位置を取得
+* @param {Object} e
+*/
+var mouseButton = function(e, t)
+{
+	if (t==2 && !touched) return false;
+
+	if (t==1) {
+		// ページが動いたり、反応しないように
+		e.preventDefault();
+
+		downTime = new Date().getTime();
+	} else {
+		//var upTime = new Date().getTime();
+		//if (upTime - downTime < 200) {}
+		downTime = 0;
+	}
+
+	var clientX = (isTouch ? event.changedTouches[0].clientX : e.clientX);
+	var clientY = (isTouch ? event.changedTouches[0].clientY : e.clientY);
+
+	// getBoundingClientRectはtargetが占める領域、
+	// つまり親要素によるズレと自身のmarginを含めた値を返す
+	// この値をグローバルなマウス値(e.clientX, e.clientY)から
+	// 引いてやることで相対的なマウス位置を取得する
+	var rect = e.target.getBoundingClientRect();
+	mouse.x = parseInt((clientX - rect.left) * rx);
+	mouse.y = parseInt((clientY - rect.top) * ry);
+	//alert("x:" + mouse.x + ",y:" + mouse.y);
+	//$.get('/?action=command&dest=0&plugin=0&group=1&id=0&value=' + (mouse.x*65536 + mouse.y));
+
+	sendMsg('/?action=command&dest=0&plugin=0&group='+ t +'&id='+ e.button +'&value='+ (mouse.x*65536 + mouse.y));
+
+	// タッチ処理を開始したフラグをたてる
+	if (t==1) touched = 1;
+	else touched = 0;
+
+	//return mouse;
+	return false;
+};
+function mouseMove(e)
+{
+	// 開始していない場合は動かないようにする
+	if (!touched) return;
+	//if (!downTime) return false;
+
+	// ページが動いたり、反応しないように
+	e.preventDefault();
+
+	var clientX = (isTouch ? event.changedTouches[0].clientX : e.clientX);
+	var clientY = (isTouch ? event.changedTouches[0].clientY : e.clientY);
+
+	var rect = e.target.getBoundingClientRect();
+	mouse.x = parseInt((clientX - rect.left) * rx);
+	mouse.y = parseInt((clientY - rect.top) * ry);
+
+	if (touched==1) {
+		// 左クリック処理
+		sendMsg('/?action=command&dest=0&plugin=0&group='+ /*t*/1 +'&id='+ /*e.button*/0 +'&value='+ (mouse.x*65536 + mouse.y));
+		touched = 2;
+	}
+	sendMsg('/?action=command&dest=0&plugin=0&group=1&id=4&value='+ (mouse.x*65536 + mouse.y));
+}
+function wheel(e)
+{
+	var wheel_delta = e.detail ? e.detail / -3 : e.wheelDelta / 120;
+
+	sendMsg('/?action=command&dest=0&plugin=0&group=1&id=3&value='+ wheel_delta);
+}
+if (window.addEventListener) window.addEventListener('DOMMouseScroll', wheel, false);
+window.onmousewheel = document.onmousewheel = wheel;
+
+function resize(sx, sy)
+{
+	$("istream").width = sx;
+	$("istream").height = sy;
+	rx = 800/sx;
+	ry = 600/sy;
+}
+function resolution(sx, sy)
+{
+	sendMsg('/?action=command&dest=0&plugin=0&group=1&id=6&value='+ (sx*65536 + sy));
+}
+function run()
+{
+	sendMsg('/?action=command&dest=0&plugin=0&group=1&id=7&value=0');
+}
+function stop()
+{
+	sendMsg('/?action=command&dest=0&plugin=0&group=1&id=8&value=0');
+}
+function quality(q)
+{
+	sendMsg('/?action=command&dest=0&plugin=0&group=1&id=9&value='+ q);
+}
+</script>
+</body>
+</html>

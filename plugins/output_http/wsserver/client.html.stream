@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Websocket client</title>
+    <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css" rel="stylesheet">
+    <script src="http://code.jquery.com/jquery.js"></script>
+</head>
+<body>
+<img id="image" src="" width="640" height="480"/>
+    <div class="container">
+        <h1 class="page-header">Websocket client</h1>
+
+        <form action="" class="form-inline" id="connectForm">
+            <div class="input-append">
+                <input type="text" class="input-large" value="ws://192.168.0.100:443/echo" id="wsServer">
+                <button class="btn" type="submit" id="connect">Connect</button>
+                <button class="btn" disabled="disabled" id="disconnect">Disconnect</button>
+            </div>
+        </form>
+        <form action="" id="sendForm">
+            <div class="input-append">
+                <input class="input-large" type="text" placeholder="message" id="message" disabled="disabled">
+                <button class="btn btn-primary" type="submit" id="send" disabled="disabled">send</button>
+            </div>
+        </form>
+        <hr>
+        <ul class="unstyled" id="log"></ul>
+    </div>
+    <script type="text/javascript">
+	/*function ab2str(buf) {
+		return String.fromCharCode.apply(null, new Uint16Array(buf));
+	}
+	function str2ab(str) {
+		var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
+		var bufView = new Uint16Array(buf);
+		for (var i=0, strLen=str.length; i<strLen; i++) {
+			bufView[i] = str.charCodeAt(i);
+		}
+		return buf;
+	}*/
+
+        $(document).ready(function() {
+            var ws;
+
+            $('#connectForm').on('submit', function() {
+                if ("WebSocket" in window) {
+                    ws = new WebSocket($('#wsServer').val());
+//ws.binaryType = 'arraybuffer';
+                    ws.onopen = function() {
+                        $('#log').append('<li><span class="badge badge-success">websocket opened</span></li>');
+                        $('#wsServer').attr('disabled', 'disabled');
+                        $('#connect').attr('disabled', 'disabled');
+                        $('#disconnect').removeAttr('disabled');
+                        $('#message').removeAttr('disabled').focus();
+                        $('#send').removeAttr('disabled');
+                    };
+
+                    ws.onerror = function() {
+                        $('#log').append('<li><span class="badge badge-important">websocket error</span></li>');
+                    };
+
+                    ws.onmessage = function(e) {
+//                        $('#log').append('<li>recieved: <span class="badge">' + e.data + '</span></li>');
+//$("#image").attr('src', 'data:image/jpg;' + e.data);
+$("#image").attr('src', 'data:image/jpg;base64,'+e.data);
+/*var bytes = new Uint8Array(e.data);
+var str = String.fromCharCode.apply(null, e.data) +"//";
+                        $('#log').append('<li>recieved: <span class="badge">' + str + '</span></li>');*/
+                    };
+
+                    ws.onclose = function() {
+                        $('#log').append('<li><span class="badge badge-important">websocket closed</span></li>');
+                        $('#wsServer').removeAttr('disabled');
+                        $('#connect').removeAttr('disabled');
+                        $('#disconnect').attr('disabled', 'disabled');
+                        $('#message').attr('disabled', 'disabled');
+                        $('#send').attr('disabled', 'disabled');
+                    };
+                } else {
+                    $('#log').append('<li><span class="badge badge-important">WebSocket NOT supported in this browser</span></li>');
+                }
+
+                return false;
+            });
+            $('#sendForm').on('submit', function() {
+                var message = $('#message').val();
+                ws.send(message);
+/*var bytes = new Uint8Array(6);
+bytes[0] = "H";
+bytes[1] = "E";
+bytes[2] = "L";
+bytes[3] = "L";
+bytes[4] = "O";
+bytes[5] = 0;
+ws.send(bytes.buffer);*/
+                $('#log').append('<li>sended: <span class="badge">' + message + '</span></li>');
+
+                return false;
+            });
+            $('#disconnect').on('click', function() {
+                ws.close();
+
+                return false;
+            });
+        });
+    </script>
+</body>
+</html>

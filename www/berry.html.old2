@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Berry Stream</title>
+</head>
+
+<body oncontextmenu="return false;">
+<script type="text/javascript">
+<!--
+document.onkeydown = function(e) {
+	var shift, ctrl;
+
+	if (e != null) {
+		// Mozilla(Firefox, NN) and Opera
+		keycode = e.which;
+		ctrl = typeof e.modifiers == 'undefined' ? e.ctrlKey : e.modifiers & Event.CONTROL_MASK;
+		shift = typeof e.modifiers == 'undefined' ? e.shiftKey : e.modifiers & Event.SHIFT_MASK;
+		// イベントの上位伝播を防止
+		e.preventDefault();
+		e.stopPropagation();
+	} else {
+		// Internet Explorer
+		keycode = event.keyCode;
+		ctrl = event.ctrlKey;
+		shift = event.shiftKey;
+		// イベントの上位伝播を防止
+		event.returnValue = false;
+		event.cancelBubble = true;
+	}
+
+	if (keycode) {
+		var url = '/?action=command&dest=0&plugin=0&group=1&id=5&value=' + keycode;
+		var request = new XMLHttpRequest();
+		request.open("GET", url, true);
+		request.send("");
+	}
+
+	// キーコードの文字を取得
+/*	keychar = String.fromCharCode(keycode).toUpperCase();
+
+	if (ctrl) {
+		// Ctrl同時押しの場合
+		if (keychar == "C") {
+			alert('Ctrl+C');
+		}
+	} else if (shift) {
+		// Shift同時押しの場合
+		if (keychar == "C") {
+			alert('Shift+C');
+		}
+	} else {
+		// 通常のキーダウン時の場合
+		if (keychar == "C") {
+			alert('C');
+		}
+	}*/
+	// 特殊キーコードの対応については次を参照
+	// 27 Esc
+	// 8 BackSpace
+	// 9 Tab
+	// 32 Space
+	// 45 Insert
+	// 46 Delete
+	// 35 End
+	// 36 Home
+	// 33 PageUp
+	// 34 PageDown
+	// 38 ↑
+	// 40 ↓
+	// 37 ←
+	// 39 →
+	// 処理の例
+	// if (keycode == 27) {
+	// alert('Escapeキーが押されました');
+	// }
+}
+
+var downTime;
+var mouse = { x: null, y:null };// マウス位置を取得
+/**
+* マウス位置を取得
+* @param {Object} e
+*/
+var getMousePosOnElement = function(e, t)
+{
+	if (t==1) {
+		downTime = new Date().getTime();
+	} else {
+		//var upTime = new Date().getTime();
+		//if (upTime - downTime < 200) {}
+		downTime = 0;
+	}
+
+	// getBoundingClientRectはtargetが占める領域、
+	// つまり親要素によるズレと自身のmarginを含めた値を返す
+	// この値をグローバルなマウス値(e.clientX, e.clientY)から
+	// 引いてやることで相対的なマウス位置を取得する
+	// ただし、自身のpaddingとborderは考慮してくれないみたいなので、
+	// 0か1pxにしておくことをオススメします
+	var rect = e.target.getBoundingClientRect();
+	mouse.x = parseInt((e.clientX - rect.left) * 800/520);
+	mouse.y = parseInt((e.clientY - rect.top) * 600/390);
+	//alert("x:" + mouse.x + ",y:" + mouse.y);
+	//$.get('/?action=command&dest=0&plugin=0&group=1&id=0&value=' + (mouse.x*65536 + mouse.y));
+
+	var url = '/?action=command&dest=0&plugin=0&group='+ t +'&id='+ e.button +'&value='+ (mouse.x*65536 + mouse.y);
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+
+	//return mouse;
+	return false;
+};
+function mouseMove(e)
+{
+	if (!downTime) return false;
+
+	var rect = e.target.getBoundingClientRect();
+	mouse.x = parseInt((e.clientX - rect.left) * 800/520);
+	mouse.y = parseInt((e.clientY - rect.top) * 600/390);
+
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=4&value='+ (mouse.x*65536 + mouse.y);
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+function wheel(e)
+{
+	var wheel_delta = e.detail ? e.detail / -3 : e.wheelDelta / 120;
+
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=3&value='+ wheel_delta;
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+if (window.addEventListener) window.addEventListener('DOMMouseScroll', wheel, false);
+window.onmousewheel = document.onmousewheel = wheel;
+
+function resolution(sx, sy)
+{
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=6&value='+ (sx*65536 + sy);
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+function run()
+{
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=7&value=0';
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+function stop()
+{
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=8&value=0';
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+function quality(q)
+{
+	var url = '/?action=command&dest=0&plugin=0&group=1&id=9&value='+ q;
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.send("");
+}
+</script>
+
+	<center>
+		<div onmousedown="getMousePosOnElement(event, 1)" onmouseup="getMousePosOnElement(event, 2)" onmousemove="mouseMove(event)" onmouseout="downTime=0"><img width=520 height=390 src="/?action=stream" ondragstart="return false;" /></div>
+	</center>
+
+	<a href="javascript:resolution(800, 600);">800x600</a>/<a href="javascript:resolution(1920, 1200);">1920x1200</a><br>
+	<a href="javascript:run();">Start RDP</a>/<a href="javascript:stop();">Stop RDP</a><br>
+	<a href="javascript:quality(1);">1</a>/<a href="javascript:quality(2);">2</a>/<a href="javascript:quality(3);">3</a>/<a href="javascript:quality(4);">4</a>/<a href="javascript:quality(5);">5</a>/<a href="javascript:quality(6);">6</a>/<a href="javascript:quality(7);">7</a>/<a href="javascript:quality(8);">8</a><br>
+</body>
+</html>
